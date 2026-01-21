@@ -208,7 +208,6 @@ __marimo__/
 
 # Project data artifacts (books + extracted text)
 book/*.epub
-book/*.jsonl
 book/*/*.jsonl
 
 # LLM API
