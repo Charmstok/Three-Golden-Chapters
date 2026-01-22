@@ -58,6 +58,9 @@ def _summarize_previous(result: Dict) -> str:
     chunks = result.get("chunks") or []
     parts: List[str] = []
     for c in chunks:
+        title = (c.get("chunk_title") or "").strip()
+        if title:
+            parts.append(f"- 小节：{title}")
         ps = (c.get("plot_summary") or "").strip()
         pace = (c.get("pacing_summary") or "").strip()
         if ps:

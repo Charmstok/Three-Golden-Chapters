@@ -12,6 +12,7 @@
   "chunks": [
     {
       "chunk_id": 1,
+      "chunk_title": "<给该 chunk 起一个简要标题>",
       "start_paragraph": <int>,
       "end_paragraph": <int>,
       "slices": [
