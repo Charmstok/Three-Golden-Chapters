@@ -1,0 +1,10 @@
+{
+  "providers": {
+    "volc_doubao": {
+      "type": "volc_ark",
+      "base_url": "https://ark.cn-beijing.volces.com",
+      "api_key": "VOLC_ARK_API_KEY",
+      "model": "doubao-seed-1-8-251228"
+    }
+  }
+}
