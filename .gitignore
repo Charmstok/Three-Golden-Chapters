@@ -208,7 +208,12 @@ __marimo__/
 
 # Project data artifacts (books + extracted text)
 book/*.epub
+book/*.jsonl
 book/*/*.jsonl
+
+# Phase 2 outputs (LLM analysis)
+book/*/analysis/*.json
+book/*/analysis/*.txt
 
 # LLM API
 llm.json
