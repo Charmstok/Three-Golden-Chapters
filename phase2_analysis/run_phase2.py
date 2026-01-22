@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -48,6 +49,17 @@ def _iter_chapter_jsonl_files(novel_dir: Path) -> List[Tuple[int, Path]]:
 def _read_jsonl_as_text(path: Path) -> str:
     # 直接把 jsonl 原样作为 prompt 的输入（保证 paragraph_id 严格对应）。
     return path.read_text(encoding="utf-8")
+
+
+def _sanitize_filename_component(name: str) -> str:
+    """用于输出文件名的安全清洗（主要兼容 Windows 文件名限制）。"""
+    name = name.strip()
+    name = name.replace("\u00a0", " ").replace("\u3000", " ")
+    # Windows forbidden characters: <>:"/\|?*
+    name = re.sub(r'[<>:"/\\\\|?*]+', "_", name)
+    name = re.sub(r"\s{2,}", " ", name).strip()
+    # 避免极端情况下文件名过长
+    return (name[:80] or "untitled")
 
 
 def _summarize_previous(result: Dict) -> str:
@@ -107,6 +119,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     previous_summary = ""
     for idx, (chapter_no, jsonl_path) in enumerate(chapter_files, start=1):
         jsonl_content = _read_jsonl_as_text(jsonl_path)
+        # 输出文件名带上章节标题，便于人工对齐（例如：1_妖魔乱世.json / 1_妖魔乱世.raw.txt）
+        out_stem = _sanitize_filename_component(jsonl_path.stem)
 
         if chapter_no == 1:
             user_prompt = render_prompt_1(prompts.prompt_1, jsonl_content=jsonl_content, chapter_id=1)
@@ -132,8 +146,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             ],
         )
 
-        out_json_path = out_dir / f"{chapter_no}.json"
-        out_raw_path = out_dir / f"{chapter_no}.raw.txt"
+        out_json_path = out_dir / f"{out_stem}.json"
+        out_raw_path = out_dir / f"{out_stem}.raw.txt"
         out_raw_path.write_text(content, encoding="utf-8")
 
         obj = extract_json_object(content)
