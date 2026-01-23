@@ -19,6 +19,15 @@ from llm_provider.llm_config import find_default_llm_config, load_provider_confi
 from llm_provider.volc_ark_chat import ChatMessage, chat_completions
 
 
+def _progress_bar(done: int, total: int, width: int = 20) -> str:
+    """Simple ASCII progress bar for console output."""
+    if total <= 0:
+        return f"进度[{'-' * width}] 0/0"
+    done = max(0, min(done, total))
+    filled = int(width * done / total)
+    return f"进度[{'#' * filled}{'-' * (width - filled)}] {done}/{total}"
+
+
 def _find_novel_dir(input_path: Path) -> Path:
     """
     输入既可以是：
@@ -93,6 +102,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="Render prompts only; do not call LLM")
     args = parser.parse_args(argv)
 
+    safe_print("[阶段 1/4] 读取 LLM 配置")
     llm_config_path = args.llm_config or find_default_llm_config()
     if llm_config_path is None:
         raise SystemExit("llm.json not found (create one or pass --llm-config)")
@@ -101,8 +111,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if provider.type != "volc_ark":
         raise SystemExit(f"Unsupported provider type: {provider.type} (only volc_ark is implemented)")
 
+    safe_print("[阶段 2/4] 读取提示词")
     prompts = load_prompts(Path("prompt"))
 
+    safe_print("[阶段 3/4] 扫描章节文件")
     novel_dir = _find_novel_dir(args.input)
     chapter_files = _iter_chapter_jsonl_files(novel_dir)
     if not chapter_files:
@@ -116,11 +128,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     out_dir = novel_dir / "analysis"
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    safe_print("[阶段 4/4] 调用模型生成分析")
     previous_summary = ""
+    total = len(chapter_files)
     for idx, (chapter_no, jsonl_path) in enumerate(chapter_files, start=1):
         jsonl_content = _read_jsonl_as_text(jsonl_path)
         # 输出文件名带上章节标题，便于人工对齐（例如：1_妖魔乱世.json / 1_妖魔乱世.raw.txt）
         out_stem = _sanitize_filename_component(jsonl_path.stem)
+        safe_print(f"{_progress_bar(idx - 1, total)} 开始：第{chapter_no}章 输入={jsonl_path.name}")
 
         if chapter_no == 1:
             user_prompt = render_prompt_1(prompts.prompt_1, jsonl_content=jsonl_content, chapter_id=1)
@@ -133,7 +148,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             )
 
         if args.dry_run:
-            safe_print(f"DRY_RUN chapter={chapter_no} chars={len(user_prompt)}")
+            safe_print(f"{_progress_bar(idx, total)} 跳过调用（dry-run）：第{chapter_no}章 提示词长度={len(user_prompt)}")
             continue
 
         content = chat_completions(
@@ -157,7 +172,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         out_json_path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
         previous_summary = _summarize_previous(obj)
-        safe_print(f"OK chapter={chapter_no}")
+        safe_print(f"{_progress_bar(idx, total)} 完成：第{chapter_no}章 输出={out_json_path.name}")
 
     return 0
 
