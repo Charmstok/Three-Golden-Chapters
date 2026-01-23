@@ -91,7 +91,7 @@ def load_chat_run_config(
         "profiles": {
           "phase2": {
             "provider": "volc_doubao",
-            "model": "doubao-seed-...",
+            "model": "doubao-seed-...",  # optional; defaults to providers.<provider>.model
             "params": {"temperature": 0.2, "max_tokens": 10000, "timeout_s": 120}
           }
         },

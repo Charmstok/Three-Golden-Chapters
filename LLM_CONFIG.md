@@ -36,7 +36,7 @@ Provider 配置字典：`{ "<provider_name>": <provider_config> }`
 
 ### `profiles`（推荐）
 
-Profile 用来把“provider + model + params”打包成一个可选项：`{ "<profile_name>": <profile_config> }`
+Profile 用来把“provider + params（以及可选的 model 覆盖）”打包成一个可选项：`{ "<profile_name>": <profile_config> }`
 
 当 `llm.json` 里模型多了之后，建议每个使用场景（例如 phase2）固定一个 profile 名称，然后只切 profile。
 
@@ -105,9 +105,11 @@ API Base URL，例如：
 
 引用 `providers` 里的某个 provider 名称，例如：`"volc_doubao"`。
 
-### `model`（必填）
+### `model`（可选）
 
-本 profile 使用的模型 ID（优先级高于 `providers.<provider>.model`）。
+（可选）本 profile 使用的模型 ID（优先级高于 `providers.<provider>.model`）。
+
+通常不需要在 profile 里重复写 `model`：如果不填，会默认使用 `providers.<provider>.model`。
 
 ### `params`（可选）
 
@@ -127,7 +129,6 @@ API Base URL，例如：
   "profiles": {
     "phase2_doubao": {
       "provider": "volc_doubao",
-      "model": "doubao-seed-1-8-251228",
       "params": {
         "temperature": 0.2,
         "max_tokens": 10000,
