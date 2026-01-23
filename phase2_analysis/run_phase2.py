@@ -15,7 +15,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from llm_provider.llm_config import find_default_llm_config, load_provider_config
+from llm_provider.llm_config import find_default_llm_config, load_chat_run_config
 from llm_provider.volc_ark_chat import ChatMessage, chat_completions
 
 
@@ -97,7 +97,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         usage="python phase2_analysis/run_phase2.py book/小说名 或 python phase2_analysis/run_phase2.py book/书名.epub",
     )
     parser.add_argument("input", type=Path, help="Novel dir (book/<name>) or .epub file path")
-    parser.add_argument("--provider", default="volc_doubao", help="Provider name in llm.json (default: volc_doubao)")
+    parser.add_argument("--profile", default=None, help="Profile name in llm.json (preferred when you have many models)")
+    parser.add_argument("--provider", default=None, help="Override provider name in llm.json/profile")
+    parser.add_argument("--model", default=None, help="Override model id")
+    parser.add_argument("--temperature", type=float, default=None, help="Override temperature")
+    parser.add_argument("--max-tokens", type=int, default=None, help="Override max_tokens")
     parser.add_argument("--llm-config", type=Path, default=None, help="Path to llm.json (default: auto-detect)")
     parser.add_argument("--dry-run", action="store_true", help="Render prompts only; do not call LLM")
     args = parser.parse_args(argv)
@@ -107,9 +111,24 @@ def main(argv: Optional[List[str]] = None) -> int:
     if llm_config_path is None:
         raise SystemExit("llm.json not found (create one or pass --llm-config)")
 
-    provider = load_provider_config(llm_config_path, args.provider)
-    if provider.type != "volc_ark":
-        raise SystemExit(f"Unsupported provider type: {provider.type} (only volc_ark is implemented)")
+    run_cfg = load_chat_run_config(
+        llm_config_path,
+        profile=args.profile,
+        provider=args.provider,
+        model=args.model,
+    )
+    if run_cfg.provider.type != "volc_ark":
+        raise SystemExit(f"Unsupported provider type: {run_cfg.provider.type} (only volc_ark is implemented)")
+
+    temperature = args.temperature if args.temperature is not None else run_cfg.params.temperature
+    max_tokens = args.max_tokens if args.max_tokens is not None else run_cfg.params.max_tokens
+    thinking = run_cfg.params.thinking
+    timeout_s = run_cfg.params.timeout_s
+
+    safe_print(
+        f"[阶段 1/4] 选择模型：provider={run_cfg.provider_name} model={run_cfg.model} "
+        f"temperature={temperature} max_tokens={max_tokens}"
+    )
 
     safe_print("[阶段 2/4] 读取提示词")
     prompts = load_prompts(Path("prompt"))
@@ -152,13 +171,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             continue
 
         content = chat_completions(
-            base_url=provider.base_url,
-            api_key=provider.api_key,
-            model=provider.model,
+            base_url=run_cfg.provider.base_url,
+            api_key=run_cfg.provider.api_key,
+            model=run_cfg.model,
             messages=[
                 ChatMessage(role="system", content=prompts.system),
                 ChatMessage(role="user", content=user_prompt),
             ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            thinking=thinking,
+            timeout_s=timeout_s,
         )
 
         out_json_path = out_dir / f"{out_stem}.json"

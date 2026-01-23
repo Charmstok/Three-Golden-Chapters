@@ -90,7 +90,11 @@ LLM 配置与调用：
 
 - 配置文件：`llm.json`（可由 `llm.example.json` 复制生成）
 - provider 调用实现：`llm_provider/`（火山方舟 Chat Completions）
-- 请求参数：`max_tokens=10000`（见 `llm_provider/volc_ark_chat.py`）
+- 模型选择：推荐在 `llm.json` 里通过 `profiles` + `default_profile` 指定（适合配置多个模型）
+- 参数配置：在 `profiles.<name>.params` 里配置 `temperature`、`max_tokens`、`timeout_s` 等
+- 命令行可覆盖：`--profile` / `--provider` / `--model` / `--temperature` / `--max-tokens`
+
+[llm.json 的字段介绍](LLM_CONFIG.md)
 
 ## 输出格式
 

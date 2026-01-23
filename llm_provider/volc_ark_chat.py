@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -28,20 +28,23 @@ def chat_completions(
     messages: List[ChatMessage],
     temperature: float = 0.2,
     max_tokens: int = 10000,
+    thinking: Optional[Dict[str, Any]] = None,
     timeout_s: int = 120,
 ) -> str:
-    """
-    调用火山方舟 Chat Completions API，返回 assistant.content（字符串）。
-    """
+    """Call Volc Ark Chat Completions API and return assistant.message.content."""
+
     url = _build_url(base_url)
+    if thinking is None:
+        thinking = {"type": "disabled"}
+
     payload: Dict[str, Any] = {
         "model": model,
         "messages": [{"role": m.role, "content": m.content} for m in messages],
         "temperature": temperature,
         "max_tokens": max_tokens,
-        # 按文档示例关闭深度思考（降低成本/延迟，且利于结构化输出稳定）
-        "thinking": {"type": "disabled"},
+        "thinking": thinking,
     }
+
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         url=url,
@@ -52,6 +55,7 @@ def chat_completions(
             "Authorization": f"Bearer {api_key}",
         },
     )
+
     try:
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
