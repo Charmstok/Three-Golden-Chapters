@@ -35,11 +35,35 @@ def _find_novel_dir(input_path: Path) -> Path:
     - book/书名.epub（文件）
     - 任意路径的 .epub（文件）
     """
-    if input_path.is_dir():
-        return input_path
-    if input_path.suffix.lower() == ".epub":
-        return Path("book") / input_path.stem
-    raise SystemExit("input must be a novel dir (book/<name>) or an .epub file path")
+    # argparse 传入的 Path 可能带有首尾空白/引号；这里做一次容错清洗。
+    s = str(input_path).strip()
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        s = s[1:-1].strip()
+    p = Path(s)
+
+    if p.exists():
+        if p.is_dir():
+            return p
+        if p.suffix.lower() == ".epub":
+            # 传入 epub 时，第二阶段默认读取第一阶段生成的 book/<书名>/ 目录
+            return Path("book") / p.stem
+        raise SystemExit(f"输入路径不是目录也不是 epub：{p}")
+
+    # 支持只传“书名”，自动补齐为 book/<书名>
+    cand_dir = Path("book") / p.name
+    if cand_dir.exists() and cand_dir.is_dir():
+        return cand_dir
+
+    if p.suffix.lower() == ".epub":
+        raise SystemExit(f"未找到 epub 文件：{p}（请检查路径）")
+
+    raise SystemExit(
+        f"未找到小说目录：{p}\n"
+        f"请先运行第一阶段生成章节 JSONL，例如：\n"
+        f"  python phase1_extract/extract_three_chapters.py book/书名.epub\n"
+        f"然后再运行第二阶段：\n"
+        f"  python phase2_analysis/run_phase2.py \"book/书名\""
+    )
 
 
 def _iter_chapter_jsonl_files(novel_dir: Path) -> List[Tuple[int, Path]]:
@@ -137,7 +161,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     novel_dir = _find_novel_dir(args.input)
     chapter_files = _iter_chapter_jsonl_files(novel_dir)
     if not chapter_files:
-        raise SystemExit(f"No chapter jsonl files found in: {novel_dir}")
+        raise SystemExit(
+            f"在目录中未找到章节 jsonl：{novel_dir}\n"
+            f"请确认已运行第一阶段，且目录下存在类似：1_章节名.jsonl / 2_章节名.jsonl / 3_章节名.jsonl"
+        )
 
     # 只处理前三章
     chapter_files = [(no, p) for (no, p) in chapter_files if 1 <= no <= 3]
