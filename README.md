@@ -4,6 +4,37 @@ AI 拆解黄金三章，逐段简述内容、拆解节奏、提取爆点，并�
 
 ---
 
+# 一键运行（推荐）
+
+输入一个参数（epub 路径 / 小说目录 / 书名），自动完成：提取前三章 -> LLM 拆解 -> 生成 Excel。
+
+首先请将电子书（*.epub） 放在 book 目录下。
+
+Windows PowerShell：
+
+```powershell
+# 只需要复制一次 llm.json
+Copy-Item llm.example.json llm.json
+$env:VOLC_ARK_API_KEY="你的key"
+powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "book\书名.epub"
+# 或：
+# powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "book\书名"
+# powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "书名"
+```
+
+Linux/macOS（bash/zsh）：
+
+```sh
+# 只需要复制一次 llm.json
+cp llm.example.json llm.json
+export VOLC_ARK_API_KEY="你的key"
+chmod +x ./run_all.sh
+./run_all.sh "book/书名.epub"
+# 或：
+# ./run_all.sh "book/书名"
+# ./run_all.sh "书名"
+```
+
 # Step 1：提取前三章（EPUB -> 按章 JSONL）
 
 目标：从 epub 电子书中按章节标题识别并只提取前三章，输出为每章一个 JSONL 文件。
