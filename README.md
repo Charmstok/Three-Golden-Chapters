@@ -10,12 +10,10 @@ AI 拆解黄金三章，逐段简述内容、拆解节奏、提取爆点，并�
 
 ## 使用方法
 
-1) 把 epub 放到 `book/` 目录下（例如：`book/xxx.epub`）
 
 2) 运行：
 
 ```sh
-python3 phase1_extract/extract_three_chapters.py book/书名.epub
 ```
 
 无论输入路径在哪里，输出都会写到 `book/书名/` 目录下（每章一个 JSONL 文件）。
@@ -52,7 +50,7 @@ python3 phase1_extract/extract_three_chapters.py book/书名.epub
 ```powershell
 Copy-Item llm.example.json llm.json
 $env:VOLC_ARK_API_KEY="你的key"
-python phase2_analysis/run_phase2.py "book/书名"
+python phase2_analysis/run_phase2.py 书名
 ```
 
 Linux/macOS（bash/zsh）：
@@ -60,19 +58,19 @@ Linux/macOS（bash/zsh）：
 ```sh
 cp llm.example.json llm.json
 export VOLC_ARK_API_KEY="你的key"
-python3 phase2_analysis/run_phase2.py "book/书名"
+python3 phase2_analysis/run_phase2.py 书名
 ```
 
 也可以只渲染提示词不发起请求（用于检查输入长度/格式）：
 
 ```powershell
-python phase2_analysis/run_phase2.py --dry-run "book/书名"
+python phase2_analysis/run_phase2.py --dry-run 书名
 ```
 
 Linux/macOS（bash/zsh）：
 
 ```sh
-python3 phase2_analysis/run_phase2.py --dry-run "book/书名"
+python3 phase2_analysis/run_phase2.py --dry-run 书名
 ```
 
 提示词位置：
@@ -84,7 +82,7 @@ python3 phase2_analysis/run_phase2.py --dry-run "book/书名"
 输入支持：
 
 - `book/书名`（目录，包含 `1_*.jsonl`、`2_*.jsonl`、`3_*.jsonl`）
-- `book/书名.epub`（会自动定位到 `book/书名/`）
+- `书名`（会自动定位到 `book/书名/`）
 
 LLM 配置与调用：
 
@@ -104,3 +102,34 @@ LLM 配置与调用：
 - `book/书名/analysis/1_章节名.raw.txt` 等（模型原始输出）
 
 其中每个 `chunk` 会包含字段 `chunk_title`（该 chunk 的简要标题）。
+
+---
+
+# Step 3：生成 Excel 报告（分析 JSON -> Excel）
+
+目标：把 Step 2 生成的三个章节分析 JSON（`book/书名/analysis/*.json`）合并成一个 Excel 文件，便于查看与筛选。
+
+## 使用方法
+
+Windows PowerShell：
+
+```powershell
+python phase3_excel/run_phase3.py 书名
+```
+
+Linux/macOS（bash/zsh）：
+
+```sh
+python3 phase3_excel/run_phase3.py 书名
+```
+
+输入支持：
+
+- `book/书名`（目录，包含 `analysis/1_*.json`、`analysis/2_*.json`、`analysis/3_*.json`）
+- `书名`（会自动定位到 `book/书名/`）
+
+## 输出格式
+
+- 默认输出：`book/书名/书名.xlsx`
+- 工作表：
+  - `分析`：每个切片一行；每个剧情块结束后会额外插入两行汇总（剧情概述/节奏概述），并用合并单元格展示。
