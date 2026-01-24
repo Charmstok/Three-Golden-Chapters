@@ -6,15 +6,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-# 兼容两种运行方式：
-# 1) python phase3_excel/run_phase3.py ...
-# 2) python phase3_excel/run_phase3.py ...（从仓库根目录 import 本模块）
-try:
-    from .analysis_loader import chapter_rows_from_analysis, iter_analysis_json_files, load_chapter_analysis
-    from .xlsx_writer import build_workbook
-except ImportError:  # pragma: no cover
-    from analysis_loader import chapter_rows_from_analysis, iter_analysis_json_files, load_chapter_analysis
-    from xlsx_writer import build_workbook
+from analysis_loader import chapter_rows_from_analysis, iter_analysis_json_files, load_chapter_analysis
+from xlsx_writer import build_workbook
 
 
 def _strip_quotes(s: str) -> str:
@@ -36,7 +29,7 @@ def _find_novel_dir(input_path: Path) -> Path:
     cand = Path("book") / p.name
     if cand.exists() and cand.is_dir():
         return cand
-    raise SystemExit(f"未找到小说目录：{p}\n请传入类似：python3 phase3_excel/run_phase3.py \"book/书名\"")
+    raise SystemExit(f"未找到小说目录：{p}\n请传入类似：python3 phase3_excel/run_phase3.py 书名")
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -87,12 +80,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     wb = build_workbook(rows=rows)
     try:
         wb.save(out_path)
-        print(f"[\u5b8c\u6210] \u8f93\u51fa\uff1a{out_path}")
+        print(f"[完成] 输出：{out_path}")
     except PermissionError:
         # Common: file is open in Excel so we cannot overwrite it.
         alt_path = out_path.with_name(f"{out_path.stem}_new{out_path.suffix}")
         wb.save(alt_path)
-        print(f"[\u63d0\u793a] \u76ee\u6807\u6587\u4ef6\u6b63\u5728\u88ab\u5360\u7528\uff0c\u5df2\u6539\u4e3a\u8f93\u51fa\u5230\uff1a{alt_path}")
+        print(f"[提示] 目标文件正在被占用，已改为输出到：{alt_path}")
     return 0
 
 
