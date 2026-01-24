@@ -51,6 +51,19 @@ def load_chapter_analysis(path: Path) -> Tuple[ChapterMeta, Dict[str, Any]]:
             no = int(obj.get("chapter_id") or 0)
         except Exception:
             no = 0
+
+    # If the analysis filename doesn't contain a title (e.g. 1.json),
+    # infer it from phase1 chapter jsonl name like 1_<title>.jsonl.
+    if no and (not title.strip()):
+        try:
+            novel_dir = path.parent.parent
+            cand = sorted(novel_dir.glob(f"{no}_*.jsonl"))
+            if cand:
+                _, t = _parse_chapter_from_stem(cand[0].stem)
+                if t:
+                    title = t
+        except Exception:
+            pass
     return ChapterMeta(chapter_no=no, chapter_title=title, source_path=path), obj
 
 
