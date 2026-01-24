@@ -214,6 +214,9 @@ book/*/*.jsonl
 # Phase 2 outputs (LLM analysis)
 book/*/analysis/*.json
 book/*/analysis/*.txt
+book/*/analysis/*.xlsx
+book/*.xlsx
+book/*/*.xlsx
 
 # LLM API
 llm.json
