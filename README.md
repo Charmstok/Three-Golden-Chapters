@@ -45,6 +45,7 @@ chmod +x ./run_all.sh
 2) 运行：
 
 ```sh
+python3 phase1_extract/extract_three_chapters.py book/书名.epub
 ```
 
 无论输入路径在哪里，输出都会写到 `book/书名/` 目录下（每章一个 JSONL 文件）。
