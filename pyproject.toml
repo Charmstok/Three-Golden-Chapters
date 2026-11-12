@@ -1,0 +1,20 @@
+[project]
+name = "three-golden-chapters"
+version = "2.0.0"
+description = "黄金三章 · EPUB 小说开篇分析 Web 应用"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.34,<1",
+  "python-multipart>=0.0.20,<1",
+  "python-dotenv>=1.0,<2",
+  "httpx[socks]>=0.28,<1",
+  "openpyxl>=3.1,<4",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["."]

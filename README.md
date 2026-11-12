@@ -1,167 +1,70 @@
-﻿# Three-Golden-Chapters
+# 📚 黄金三章
 
-AI 拆解黄金三章，逐段简述内容、拆解节奏、提取爆点，并生成 excel 分析报告。
+**用 AI 拆解小说开篇，读懂剧情、节奏与爆点。**
 
----
+![Vue 3](https://img.shields.io/badge/Vue-3-42b883)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-# 一键运行（推荐）
+上传一本 EPUB，在浏览器中分析前三章，把阅读积累变成创作参考。
 
-输入一个参数（epub 路径 / 小说目录 / 书名），自动完成：提取前三章 -> LLM 拆解 -> 生成 Excel。
+## ✨ 功能
 
-首先请将电子书（*.epub） 放在 book 目录下。
+- **章节提取**：自动识别 EPUB 前三章，保留原文与段落编号。
+- **AI 拆解**：逐段分析剧情、叙事节奏与爆点，关联上下章内容。
+- **自由选模**：支持 OpenAI 兼容的 Chat Completions 和 Responses 接口。
+- **网页配置**：管理多组模型、测试连接、切换默认模型，无需手动填写配置文件。
+- **报告导出**：在线阅读分析结果，下载 Excel 或 JSON 报告。
 
-Windows PowerShell：
+## 🚀 快速开始
 
-```powershell
-# 只需要复制一次 llm.json
-Copy-Item llm.example.json llm.json
-$env:VOLC_ARK_API_KEY="你的key"
-powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "book\书名.epub"
-# 或：
-# powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "book\书名"
-# powershell -ExecutionPolicy Bypass -File .\run_all.ps1 "书名"
-```
-
-Linux/macOS（bash/zsh）：
+准备 Python 3.10+、Node.js 22.18+ / 24.12+ 和 [uv](https://docs.astral.sh/uv/)，在项目根目录启动后端：
 
 ```sh
-# 只需要复制一次 llm.json
-cp llm.example.json llm.json
-export VOLC_ARK_API_KEY="你的key"
-chmod +x ./run_all.sh
-./run_all.sh "book/书名.epub"
-# 或：
-# ./run_all.sh "book/书名"
-# ./run_all.sh "书名"
+uv sync --locked
+uv run uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-# Step 1：提取前三章（EPUB -> 按章 JSONL）
-
-目标：从 epub 电子书中按章节标题识别并只提取前三章，输出为每章一个 JSONL 文件。
-
-## 使用方法
-
-
-2) 运行：
+新开一个终端，启动前端：
 
 ```sh
-python3 phase1_extract/extract_three_chapters.py book/书名.epub
+cd frontend
+npm ci
+npm run dev
 ```
 
-无论输入路径在哪里，输出都会写到 `book/书名/` 目录下（每章一个 JSONL 文件）。
+打开 [http://127.0.0.1:5173](http://127.0.0.1:5173)，进入 **模型设置**，填写接口地址、API Key 和模型 ID。保存后上传 EPUB，点击 **开始拆解** 即可。
 
-## 输出格式
+> 支持最大 50 MB 的 EPUB。模型调用费用由你使用的服务商收取。
 
-- `book/书名/1_章节名.jsonl`
-- `book/书名/2_章节名.jsonl`
-- `book/书名/3_章节名.jsonl`
+## ⚙️ 模型与数据
 
-每行一个 JSON 对象，包含两个字段：
+- Base URL 可填写 API 根地址或完整接口地址；以 `/responses` 结尾时自动识别为 Responses，使用根地址时可手动选择接口格式。
+- 密钥保存在后端，保存后不回传原文；编辑时留空保留原密钥，也可替换或清除。
+- 书籍、报告和模型配置保存在 `data/`。可通过 `TGC_DATA_DIR` 更换目录，备份时请妥善保管其中的密钥。
 
-- `paragraph_id`：段号，从 1 开始
-- `text`：本段内容（章节标题不占用 paragraph_id）
+## 📦 构建运行
 
-## 章节标题识别规则
-
-脚本会把以下形式的“单行文本块”视为章节标题：
-
-- `第 x 章/节/回 书名`（x 支持阿拉伯数字或常见中文数字）
-- `x、书名`
-- `x. 书名` / `x．书名`
-
-实现上会优先使用更稳的 `第 x 章/节/回 ...` 作为分章边界；只有在未找到足够章节时，才会回退到 `x、...` / `x. ...` 风格（并尽量用“书名匹配”减少误判）。
-
----
-
-# Step 2：发送给大模型做拆解（JSONL -> 分析 JSON）
-
-目标：把 Step 1 的每章 JSONL 发送给大模型，输出结构化的剧情块（chunk/slice）分析 JSON。
-
-## 使用方法
-
-```powershell
-Copy-Item llm.example.json llm.json
-$env:VOLC_ARK_API_KEY="你的key"
-python phase2_analysis/run_phase2.py 书名
-```
-
-Linux/macOS（bash/zsh）：
+在项目根目录执行，由 Python 同时提供前端页面与 API：
 
 ```sh
-cp llm.example.json llm.json
-export VOLC_ARK_API_KEY="你的key"
-python3 phase2_analysis/run_phase2.py 书名
+npm --prefix frontend ci
+npm --prefix frontend run build
+uv run --no-dev uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-也可以只渲染提示词不发起请求（用于检查输入长度/格式）：
+访问 [http://127.0.0.1:8000](http://127.0.0.1:8000)，API 文档见 [/docs](http://127.0.0.1:8000/docs)。
 
-```powershell
-python phase2_analysis/run_phase2.py --dry-run 书名
-```
+当前面向个人本机使用，采用单进程后台任务，暂不提供登录和权限隔离。
 
-Linux/macOS（bash/zsh）：
+## 🛠️ 开发
+
+技术栈：**Vue 3 · TypeScript · Vite · FastAPI · SQLite**
 
 ```sh
-python3 phase2_analysis/run_phase2.py --dry-run 书名
+uv run pytest
+npm --prefix frontend run build
 ```
 
-提示词位置：
+后端代码位于 `backend/`，前端位于 `frontend/`，分析提示词位于 `backend/prompts/`。测试使用模拟模型，不调用付费接口。
 
-- `prompt/system.md`
-- `prompt/prompt_1.md`
-- `prompt/prompt_23.md`
-
-输入支持：
-
-- `book/书名`（目录，包含 `1_*.jsonl`、`2_*.jsonl`、`3_*.jsonl`）
-- `书名`（会自动定位到 `book/书名/`）
-
-LLM 配置与调用：
-
-- 配置文件：`llm.json`（可由 `llm.example.json` 复制生成）
-- provider 调用实现：`llm_provider/`（火山方舟 Chat Completions）
-- 模型选择：推荐在 `llm.json` 里通过 `profiles` + `default_profile` 指定（适合配置多个模型）
-- 参数配置：在 `profiles.<name>.params` 里配置 `temperature`、`max_tokens`、`timeout_s` 等
-- 命令行可覆盖：`--profile` / `--provider` / `--model` / `--temperature` / `--max-tokens`
-
-[llm.json 的字段介绍](LLM_CONFIG.md)
-
-## 输出格式
-
-输出：
-
-- `book/书名/analysis/1_章节名.json`、`2_章节名.json`、`3_章节名.json`
-- `book/书名/analysis/1_章节名.raw.txt` 等（模型原始输出）
-
-其中每个 `chunk` 会包含字段 `chunk_title`（该 chunk 的简要标题）。
-
----
-
-# Step 3：生成 Excel 报告（分析 JSON -> Excel）
-
-目标：把 Step 2 生成的三个章节分析 JSON（`book/书名/analysis/*.json`）合并成一个 Excel 文件，便于查看与筛选。
-
-## 使用方法
-
-Windows PowerShell：
-
-```powershell
-python phase3_excel/run_phase3.py 书名
-```
-
-Linux/macOS（bash/zsh）：
-
-```sh
-python3 phase3_excel/run_phase3.py 书名
-```
-
-输入支持：
-
-- `book/书名`（目录，包含 `analysis/1_*.json`、`analysis/2_*.json`、`analysis/3_*.json`）
-- `书名`（会自动定位到 `book/书名/`）
-
-## 输出格式
-
-- 默认输出：`book/书名/书名.xlsx`
-- 工作表：
-  - `分析`：每个切片一行；每个剧情块结束后会额外插入两行汇总（剧情概述/节奏概述），并用合并单元格展示。
